@@ -1,0 +1,115 @@
+source('~/git/read_cross_msg/read.cross.msg.1.5.R', chdir = TRUE)
+y<-read.cross.msg("ancestry-probs-par1.tsv.sorted.csv","ancestry-probs-par1.tsv.sorted.pulled.converted.thinned","phenofile.csv")
+y<-subset(y,ind=(ntyped(y)>7000)) ##reduce to individuals typed at >7000 markers
+nt.bymar<-ntyped(y,"mar") ##reduce to markers typed in > 100 individuals
+todrop<-names(nt.bymar[nt.bymar < 300])
+y<-drop.markers(y,todrop)
+todrop<-markernames(y,"NW_016083559.1")
+y<-drop.markers(y,todrop)
+
+chroms<-chrnames(y)
+
+##calculate rf between all pairs of contigs. Calculate mean rf between left marker and all other contigs and right marker and all other contigs
+
+nummarkers<-length(chroms)
+leftresults<-array(,c(nummarkers,nummarkers))
+colnames(leftresults)<-chroms
+rownames(leftresults)<-chroms
+rightresults<-leftresults
+row<-1
+col<-row+1
+for(ch1 in chroms) { 
+	for(ch2 in chroms[col:length(chroms)]){
+	tempcross<-subset(y,chr=c(ch1,ch2))
+	tempcross<-est.rf(tempcross)
+	ch1mn<-length(markernames(tempcross, ch1)) ##number of markers in chr 1
+	ch2mn<-length(markernames(tempcross, ch2)) ##number of markers in chr 2
+	leftmarkermean<-mean(tempcross$rf[(ch1mn+1):(ch1mn+ch2mn),40],na.rm = TRUE)
+	leftresults[row,col]<-leftmarkermean
+	rightmarkermean<-mean(tempcross$rf[(ch1mn+1):(ch1mn+ch2mn),(ch1mn-40)],na.rm = TRUE)
+	rightresults[row,col]<-rightmarkermean
+	col<-col+1	
+	}
+	row<-row+1
+	col<-row+1
+}
+
+##Try to cluster
+tleftresults<-t(leftresults)
+hc<-hclust(as.dist(tleftresults))
+plot(hc)
+> cutree(hc,k=5)
+NW_016083757.1 NW_016083722.1 NW_016083701.1 NW_016083788.1 NW_016083554.1 NW_016083694.1 NW_016083763.1 NW_016083536.1 NW_016083588.1 
+             1              2              3              4              5              2              1              5              4 
+NW_016083612.1 NW_016083516.1 NW_016083846.1 NW_016083720.1 NW_016083074.1 NW_016083781.1 NW_016083501.1 NW_016083769.1 NW_016083709.1 
+             4              4              5              4              1              5              1              4              2 
+NW_016083786.1 NW_016083555.1 NW_016083615.1 NW_016083707.1 NW_016079081.1 NW_016083780.1 NW_016083702.1 NW_016083748.1 NW_016083776.1 
+             4              4              2              1              4              3              4              2              1 
+NW_016083746.1 NW_016083508.1 NW_016083089.1 NW_016083502.1 NW_016083857.1 NW_016083476.1 NW_016083479.1 NW_016083723.1 NW_016083238.1 
+             4              1              5              4              2              4              5              2              5 
+NW_016083790.1 NW_016083154.1 NW_016083855.1 NW_016083535.1 NW_016083719.1 NW_016083725.1 NW_016083736.1 NW_016083532.1 NW_016083503.1 
+             2              5              2              2              2              2              2              5              4 
+NW_016082968.1 NW_016083150.1 NW_016083480.1 NW_016083534.1 NW_016083525.1 NW_016083740.1 NW_016083529.1 NW_016082211.1 NW_016083773.1 
+             5              5              5              5              4              2              4              2              2 
+NW_016083530.1 NW_016081828.1 NW_016083766.1 NW_016083485.1 NW_016083779.1 NW_016083791.1 NW_016082993.1 NW_016083541.1 NW_016083223.1 
+             2              5              2              2              2              2              2              1              2 
+NW_016083858.1 NW_016082909.1 NW_016083237.1 NW_016082964.1 NW_016083704.1 NW_016082963.1 NW_016082931.1 NW_016083507.1 NW_016083620.1 
+             2              5              4              5              4              4              1              2              4 
+NW_016083185.1 NW_016083495.1 NW_016082727.1 NW_016083775.1 NW_016082615.1 NW_016083275.1 NW_016083660.1 NW_016083619.1 NW_016083600.1 
+             5              1              5              1              2              4              2              2              2 
+NW_016083277.1 NW_016083229.1 NW_016083036.1 NW_016083533.1 NW_016080073.1 NW_016083243.1 NW_016083518.1 NW_016082605.1 NW_016083488.1 
+             5              2              2              1              2              1              5              1              4 
+NW_016083198.1 NW_016082890.1 
+             5              4
+
+trightresults<-t(rightresults)
+hc<-hclust(as.dist(trightresults))
+plot(hc,cex=.7)
+cutree(hc,k=5)
+NW_016083757.1 NW_016083722.1 NW_016083701.1 NW_016083788.1 NW_016083554.1 NW_016083694.1 NW_016083763.1 NW_016083536.1 NW_016083588.1 
+             1              2              1              3              4              4              1              4              3 
+NW_016083612.1 NW_016083516.1 NW_016083846.1 NW_016083720.1 NW_016083074.1 NW_016083781.1 NW_016083501.1 NW_016083769.1 NW_016083709.1 
+             3              3              4              3              1              4              1              3              2 
+NW_016083786.1 NW_016083555.1 NW_016083615.1 NW_016083707.1 NW_016079081.1 NW_016083780.1 NW_016083702.1 NW_016083748.1 NW_016083776.1 
+             5              3              2              1              3              4              3              2              1 
+NW_016083746.1 NW_016083508.1 NW_016083089.1 NW_016083502.1 NW_016083857.1 NW_016083476.1 NW_016083479.1 NW_016083723.1 NW_016083238.1 
+             5              1              4              3              2              3              4              2              4 
+NW_016083790.1 NW_016083154.1 NW_016083855.1 NW_016083535.1 NW_016083719.1 NW_016083725.1 NW_016083736.1 NW_016083532.1 NW_016083503.1 
+             2              4              2              2              2              2              2              4              3 
+NW_016082968.1 NW_016083150.1 NW_016083480.1 NW_016083534.1 NW_016083525.1 NW_016083740.1 NW_016083529.1 NW_016082211.1 NW_016083773.1 
+             4              4              5              4              3              2              3              2              2 
+NW_016083530.1 NW_016081828.1 NW_016083766.1 NW_016083485.1 NW_016083779.1 NW_016083791.1 NW_016082993.1 NW_016083541.1 NW_016083223.1 
+             2              4              2              2              2              2              2              1              2 
+NW_016083858.1 NW_016082909.1 NW_016083237.1 NW_016082964.1 NW_016083704.1 NW_016082963.1 NW_016082931.1 NW_016083507.1 NW_016083620.1 
+             2              4              3              4              3              3              1              2              3 
+NW_016083185.1 NW_016083495.1 NW_016082727.1 NW_016083775.1 NW_016082615.1 NW_016083275.1 NW_016083660.1 NW_016083619.1 NW_016083600.1 
+             4              1              4              1              2              5              2              2              2 
+NW_016083277.1 NW_016083229.1 NW_016083036.1 NW_016083533.1 NW_016080073.1 NW_016083243.1 NW_016083518.1 NW_016082605.1 NW_016083488.1 
+             4              2              2              1              2              1              4              1              3 
+NW_016083198.1 NW_016082890.1 
+             4              3
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#plot linear rf maps for each linkage group
+for(ch in chroms) {
+	mn<-markernames(y,chr=ch)
+	pdf(file.path("./", paste(ch,"pdf",sep=".")), width=20, height=10)
+	par(mfrow=c(2,1))
+	plot(rf, mn[50], bandcol="gray70", alternate.chrid=TRUE)
+	plot(rf, mn[length(mn)-50], bandcol="gray70", alternate.chrid=TRUE)
+	dev.off()	
+	}
